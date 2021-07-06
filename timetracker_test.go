@@ -6,22 +6,9 @@ import (
 	"time"
 	"timetracker"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/go-cmp/cmp"
 )
-
-var tasklist = timetracker.Tasklist{
-
-	"taskID1": {
-		Name:        "piano",
-		StartTime:   time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
-		ElapsedTime: time.Date(2021, 1, 1, 0, 10, 0, 0, time.UTC).Sub(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)),
-	},
-	"taskID2": {
-		Name:        "swim",
-		StartTime:   time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
-		ElapsedTime: time.Date(2021, 1, 1, 0, 10, 0, 0, time.UTC).Sub(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)),
-	},
-}
 
 func TestStartTracking(t *testing.T) {
 
@@ -100,7 +87,7 @@ func TestGetMessage(t *testing.T) {
 
 	got := task.GetMessage()
 
-	want := fmt.Sprintf("You spent %.1f seconds on the %s task", elapsed.Seconds(), name)
+	want := fmt.Sprintf("You spent %.1f seconds on the %s task", elapsed, name)
 
 	if want != got {
 		t.Errorf("Wanted: %s, got %s", want, got)
@@ -108,43 +95,80 @@ func TestGetMessage(t *testing.T) {
 
 }
 
-func TestGetAllTasklist(t *testing.T) {
-	want := []timetracker.Task{
-		{
-			Name: "piano",
-		},
-		{
-			Name: "swim",
-		},
+// DB tests
+func TestGenerateInsertSQL(t *testing.T) {
+	t.Parallel()
+	want := `INSERT INTO tasks(task_name, start_time, elased_time) VALUES($1, $2, $3)`
+
+	got, err := timetracker.GenerateSQLQuery("insert")
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	got := tasklist.GetAllTaskList()
+	if want != got {
+		t.Errorf("wanted: %s, got: %s", want, got)
+	}
 
-	if !cmp.Equal(want, got) {
-		t.Error(cmp.Diff(want, got))
+}
+
+func TestGenerateReportSQL(t *testing.T) {
+	t.Parallel()
+	want := `SELECT task, SUM(elapsed_time) AS total_time FROM tasks GROUP BY task`
+
+	got, err := timetracker.GenerateSQLQuery("report")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want != got {
+		t.Errorf("wanted: %s, got: %s", want, got)
 	}
 }
 
-// }
+func TestParseRows(t *testing.T) {
 
-func TestSaveTask(t *testing.T) {
+	t.Parallel()
 
-	tl := timetracker.Tasklist{}
-	task := timetracker.NewTask("piano")
-	task.Start(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC))
+	want := []timetracker.Report{
+		{
+			Task:      "piano",
+			TotalTime: 10.0,
+		},
+		{
+			Task:      "swim",
+			TotalTime: 10.0,
+		},
+	}
 
-	task.Stop(time.Date(2021, 1, 1, 0, 10, 0, 0, time.UTC))
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
 
-	tl.Save(task)
+	rows := sqlmock.NewRows([]string{"task", "total_time"}).
+		AddRow(10, "piano").
+		AddRow(10, "swim")
 
-	task2 := timetracker.NewTask("swim")
+	mock.ExpectQuery("SELECT task, SUM(elapsed_time) total_time FROM tasks GROUP BY task").WillReturnRows(rows)
 
-	task2.Stop(time.Date(2021, 1, 1, 0, 10, 0, 0, time.UTC))
+	e := &timetracker.Env{Db: db}
 
-	tl.Save(task2)
+	query, err := timetracker.GenerateSQLQuery("report")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	got := tasklist.GetAllTaskList()
-	want := tl.GetAllTaskList()
+	results, err := e.Db.Query(query)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer results.Close()
+
+	got, err := timetracker.ParseRows(results)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if !cmp.Equal(want, got) {
 		t.Error(cmp.Diff(want, got))
