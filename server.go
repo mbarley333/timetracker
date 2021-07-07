@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"text/template"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -23,6 +24,7 @@ type Server struct {
 	logger     *log.Logger
 	Port       int
 	LogLevel   string
+	tasks      *Env
 }
 
 // type to hold options for Server struct
@@ -47,7 +49,7 @@ func NewServer(opts ...Option) *Server {
 
 	// create Server instance with defaults
 	s := &Server{
-		Port:     9090,
+		Port:     4000,
 		LogLevel: "verbose",
 	}
 
@@ -84,7 +86,7 @@ func (s *Server) ListenAndServe() error {
 	}
 	defer db.Close()
 
-	env := Env{Db: db}
+	s.tasks = &Env{Db: db}
 
 	s.httpServer = &http.Server{
 		Addr:              s.Addr,
@@ -95,10 +97,18 @@ func (s *Server) ListenAndServe() error {
 
 	s.logger.Println("Starting up on ", s.Addr)
 	mux := http.NewServeMux()
+	mux.HandleFunc("/", home)
+	mux.HandleFunc("/task", showTaskReport)
+	mux.HandleFunc("/task/create", s.createTask)
+
+	fileServer := http.FileServer(http.Dir("./ui/static/"))
+
+	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+
 	s.httpServer.Handler = mux
 
 	if err := s.httpServer.ListenAndServe(); err != nil {
-		WaitForServerRoute(s.Addr + "/weather")
+		WaitForServerRoute(s.Addr + "/")
 		s.logger.Println("server start:", err)
 		return err
 	}
@@ -176,4 +186,58 @@ func BuildDbConnection() (string, error) {
 
 	return fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable",
 		host, convertPort, user, dbname), nil
+}
+
+func home(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+
+	files := []string{
+		"./ui/html/home.page.tmpl",
+		"./ui/html/base.layout.tmpl",
+		"./ui/html/footer.partial.tmpl",
+	}
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	err = ts.Execute(w, nil)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+}
+
+// Add a showSnippet handler function.
+func showTaskReport(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Display the task report.."))
+}
+
+// Add a createSnippet handler function.
+func (s *Server) createTask(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		return
+	}
+
+	data := Task{
+		Name:        "test",
+		StartTime:   time.Now(),
+		ElapsedTime: 10.0,
+	}
+
+	err := s.tasks.Create(data)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/task", http.StatusSeeOther)
+
 }

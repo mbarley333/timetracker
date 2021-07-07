@@ -3,8 +3,6 @@ package timetracker
 import (
 	"fmt"
 	"time"
-
-	_ "github.com/lib/pq"
 )
 
 type Task struct {
