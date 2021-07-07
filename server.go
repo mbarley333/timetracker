@@ -98,7 +98,7 @@ func (s *Server) ListenAndServe() error {
 	s.logger.Println("Starting up on ", s.Addr)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", home)
-	mux.HandleFunc("/task", showTaskReport)
+	mux.HandleFunc("/task", s.showTaskReport)
 	mux.HandleFunc("/task/create", s.createTask)
 
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
@@ -108,7 +108,7 @@ func (s *Server) ListenAndServe() error {
 	s.httpServer.Handler = mux
 
 	if err := s.httpServer.ListenAndServe(); err != nil {
-		WaitForServerRoute(s.Addr + "/")
+		WaitForServerRoute(s.Addr + "/task")
 		s.logger.Println("server start:", err)
 		return err
 	}
@@ -213,12 +213,19 @@ func home(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Add a showSnippet handler function.
-func showTaskReport(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Display the task report.."))
+func (s *Server) showTaskReport(w http.ResponseWriter, r *http.Request) {
+
+	report, err := s.tasks.GetReport()
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "%v", report)
+
 }
 
-// Add a createSnippet handler function.
 func (s *Server) createTask(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)

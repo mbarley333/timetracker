@@ -51,7 +51,7 @@ func GenerateSQLQuery(sql string) (string, error) {
 	case "insert":
 		return `INSERT INTO tasks(task_name, start_time, elased_time) VALUES($1, $2, $3)`, nil
 	case "report":
-		return `SELECT task, SUM(elapsed_time) total_time FROM tasks GROUP BY task`, nil
+		return `SELECT task_name, SUM(elapsed_time) total_time FROM tasks GROUP BY task_name`, nil
 	}
 	return "", fmt.Errorf("unable to generate sql based on input paramter: %s", sql)
 }
@@ -61,7 +61,7 @@ func ParseRows(r *sql.Rows) ([]Report, error) {
 	var reports []Report
 	for r.Next() {
 		var report Report
-		if err := r.Scan(&report.TotalTime, &report.Task); err != nil {
+		if err := r.Scan(&report.Task, &report.TotalTime); err != nil {
 			return []Report{}, fmt.Errorf("unable to scan report: %s", err)
 		}
 		reports = append(reports, report)

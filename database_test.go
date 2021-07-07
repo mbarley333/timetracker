@@ -25,7 +25,7 @@ func TestGenerateInsertSQL(t *testing.T) {
 
 func TestGenerateReportSQL(t *testing.T) {
 	t.Parallel()
-	want := `SELECT task, SUM(elapsed_time) total_time FROM tasks GROUP BY task`
+	want := `SELECT task_name, SUM(elapsed_time) total_time FROM tasks GROUP BY task_name`
 
 	got, err := timetracker.GenerateSQLQuery("report")
 	if err != nil {
@@ -62,7 +62,7 @@ func TestParseRows(t *testing.T) {
 		AddRow(10, "piano").
 		AddRow(10, "swim")
 
-	mock.ExpectQuery("SELECT task, SUM(elapsed_time) total_time FROM tasks GROUP BY task").WillReturnRows(rows)
+	mock.ExpectQuery("SELECT task_name, SUM(elapsed_time) total_time FROM tasks GROUP BY task_name").WillReturnRows(rows)
 
 	e := &timetracker.Env{Db: db}
 
