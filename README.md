@@ -19,6 +19,5 @@ To learn and become more familiar with the following aspects of the Go language:
 * HTTP Server
 * templating
 * UI
-* logging
-* crypto
+
 
