@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"text/template"
-	"time"
 )
 
 // TemplateData is used to load struct
@@ -62,25 +61,16 @@ func (s *Server) showTaskReport(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) createTask(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		return
+
+	data := TemplateData{}
+
+	files := []string{
+		"./ui/html/create.page.tmpl",
+		"./ui/html/base.layout.tmpl",
+		"./ui/html/footer.partial.tmpl",
 	}
 
-	data := Task{
-		Name:        "test",
-		StartTime:   time.Now(),
-		ElapsedTime: 10.0,
-	}
-
-	err := s.tasks.Create(data)
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	Render(w, r, data, files)
 
 }
 
