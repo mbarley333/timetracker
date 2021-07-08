@@ -3,6 +3,23 @@
 {{define "title"}}Home{{end}}
 
 {{define "main"}}
-<h2>Latest Tasks</h2>
-<p>There's nothing to see here yet!</p>
+    <h2>Latest Tasks</h2>
+    {{if .Tasks}}
+     <table>
+        <tr>
+            <th>Name</th>
+            <th>Created</th>
+            <th>Elasped Time (sec)</th>
+        </tr>
+        {{range .Tasks}}
+        <tr>
+            <td>{{.Name}}</td>
+            <td>{{.StartTime}}</td>
+            <td>{{.ElapsedTime}}</td>
+        </tr>
+        {{end}}
+    </table>
+    {{else}}
+        <p>There's nothing to see here... yet!</p>
+    {{end}}
 {{end}}

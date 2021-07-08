@@ -27,6 +27,13 @@ type Server struct {
 	tasks      *Env
 }
 
+// templateData is used to load struct
+// data into the ui .tmpl files
+type templateData struct {
+	Reports []Report
+	Tasks   []Task
+}
+
 // type to hold options for Server struct
 type Option func(*Server)
 
@@ -97,7 +104,7 @@ func (s *Server) ListenAndServe() error {
 
 	s.logger.Println("Starting up on ", s.Addr)
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", home)
+	mux.HandleFunc("/", s.home)
 	mux.HandleFunc("/task", s.showTaskReport)
 	mux.HandleFunc("/task/create", s.createTask)
 
@@ -188,11 +195,19 @@ func BuildDbConnection() (string, error) {
 		host, convertPort, user, dbname), nil
 }
 
-func home(w http.ResponseWriter, r *http.Request) {
+func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
 	}
+
+	tasks, err := s.tasks.GetLatest()
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	data := templateData{Tasks: tasks}
 
 	files := []string{
 		"./ui/html/home.page.tmpl",
@@ -206,7 +221,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = ts.Execute(w, nil)
+	err = ts.Execute(w, data)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -222,7 +237,23 @@ func (s *Server) showTaskReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "%v", report)
+	files := []string{
+		"./ui/html/show.page.tmpl",
+		"./ui/html/base.layout.tmpl",
+		"./ui/html/footer.partial.tmpl",
+	}
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	err = ts.Execute(w, report)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 
 }
 
