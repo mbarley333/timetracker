@@ -12,7 +12,6 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
-	"text/template"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -25,13 +24,6 @@ type Server struct {
 	Port       int
 	LogLevel   string
 	tasks      *Env
-}
-
-// templateData is used to load struct
-// data into the ui .tmpl files
-type templateData struct {
-	Reports []Report
-	Tasks   []Task
 }
 
 // type to hold options for Server struct
@@ -105,7 +97,7 @@ func (s *Server) ListenAndServe() error {
 	s.logger.Println("Starting up on ", s.Addr)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.home)
-	mux.HandleFunc("/task", s.showTaskReport)
+	mux.HandleFunc("/task/report", s.showTaskReport)
 	mux.HandleFunc("/task/create", s.createTask)
 
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
@@ -193,89 +185,4 @@ func BuildDbConnection() (string, error) {
 
 	return fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable",
 		host, convertPort, user, dbname), nil
-}
-
-func (s *Server) home(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
-
-	tasks, err := s.tasks.GetLatest()
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	data := templateData{Tasks: tasks}
-
-	files := []string{
-		"./ui/html/home.page.tmpl",
-		"./ui/html/base.layout.tmpl",
-		"./ui/html/footer.partial.tmpl",
-	}
-	ts, err := template.ParseFiles(files...)
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	err = ts.Execute(w, data)
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
-}
-
-func (s *Server) showTaskReport(w http.ResponseWriter, r *http.Request) {
-
-	report, err := s.tasks.GetReport()
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	files := []string{
-		"./ui/html/show.page.tmpl",
-		"./ui/html/base.layout.tmpl",
-		"./ui/html/footer.partial.tmpl",
-	}
-	ts, err := template.ParseFiles(files...)
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	err = ts.Execute(w, report)
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
-
-}
-
-func (s *Server) createTask(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		return
-	}
-
-	data := Task{
-		Name:        "test",
-		StartTime:   time.Now(),
-		ElapsedTime: 10.0,
-	}
-
-	err := s.tasks.Create(data)
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, "/task", http.StatusSeeOther)
-
 }

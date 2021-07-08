@@ -13,8 +13,8 @@ type Task struct {
 }
 
 type Report struct {
-	Task      string  `db:"task_name"`
-	TotalTime float64 `db:"total_time"`
+	Task      string
+	TotalTime float64
 }
 
 func NewTask(task string) Task {

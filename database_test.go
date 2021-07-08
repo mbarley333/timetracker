@@ -40,7 +40,7 @@ func TestGenerateReportSQL(t *testing.T) {
 
 func TestGenerateLatestSQL(t *testing.T) {
 	t.Parallel()
-	want := `SELECT task_name, start_time, elased_time FROM tasks ORDER BY start_time DESC LIMIT 10`
+	want := `SELECT task_name, start_time, elapsed_time FROM tasks ORDER BY start_time DESC LIMIT 10`
 
 	got, err := timetracker.GenerateSQLQuery("latest")
 	if err != nil {
@@ -79,7 +79,7 @@ func TestParseRowsTasks(t *testing.T) {
 		AddRow("piano", time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), 10.0).
 		AddRow("swim", time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC), 10.0)
 
-	mock.ExpectQuery("SELECT task_name, start_time, elased_time FROM tasks ORDER BY start_time DESC LIMIT 10").WillReturnRows(rows)
+	mock.ExpectQuery("SELECT task_name, start_time, elapsed_time FROM tasks ORDER BY start_time DESC LIMIT 10").WillReturnRows(rows)
 
 	e := &timetracker.Env{Db: db}
 
@@ -126,9 +126,9 @@ func TestParseRowsReport(t *testing.T) {
 	}
 	defer db.Close()
 
-	rows := sqlmock.NewRows([]string{"task", "total_time"}).
-		AddRow(10, "piano").
-		AddRow(10, "swim")
+	rows := sqlmock.NewRows([]string{"task_name", "total_time"}).
+		AddRow("piano", 10).
+		AddRow("swim", 10)
 
 	mock.ExpectQuery("SELECT task_name, SUM(elapsed_time) total_time FROM tasks GROUP BY task_name").WillReturnRows(rows)
 
