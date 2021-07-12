@@ -1,102 +1,59 @@
 package timetracker_test
 
 import (
-	"bytes"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 	"timetracker"
 )
 
-func TestGetEnvironmentVariables(t *testing.T) {
-	t.Parallel()
-
-	type testCase struct {
-		fn func(string) (string, error)
-		a  string
-	}
-	tcs := []testCase{
-		{fn: timetracker.GetEnvironmentVariable, a: "TIMETRACKER_DB_HOST"},
-		{fn: timetracker.GetEnvironmentVariable, a: "TIMETRACKER_DB_PORT"},
-		{fn: timetracker.GetEnvironmentVariable, a: "TIMETRACKER_DB_USER"},
-		{fn: timetracker.GetEnvironmentVariable, a: "TIMETRACKER_DB_NAME"},
-	}
-	for _, tc := range tcs {
-		_, err := tc.fn(tc.a)
-		if err != nil {
-			t.Fatalf("error with environment variable: %s %s", tc.a, err)
-		}
-	}
-
-}
-
-func TestServerRoutesStatusOK(t *testing.T) {
-	t.Parallel()
-
-	type testCase struct {
-		route string
-	}
-	tcs := []testCase{
-		{route: "http://127.0.0.1:9000"},
-		{route: "http://127.0.0.1:9000/task/report"},
-		{route: "http://127.0.0.1:9000/task/create"},
-	}
-	s := timetracker.NewServer(
-		timetracker.WithPort(9000),
-		timetracker.WithLogLevel("quiet"),
-	)
-
-	go func() {
-		err := s.ListenAndServe()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
-
-	for _, tc := range tcs {
-		resp, err := http.Get(tc.route)
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			t.Fatalf("unexpected status %d", resp.StatusCode)
-		}
-
-	}
-
-}
-
 func TestRenderHomePage(t *testing.T) {
 	t.Parallel()
+
+	startTime, err := time.Parse(time.RFC3339, "2021-01-01T00:00:00+00:00")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tasks := []timetracker.Task{
 		{
 			Name:        "piano",
-			StartTime:   time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+			StartTime:   startTime,
 			ElapsedTime: 10.0,
 		},
 		{
 			Name:        "swim",
-			StartTime:   time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+			StartTime:   startTime,
 			ElapsedTime: 10.0,
 		},
 	}
 
-	files := []string{
-		"./ui/html/home.page.tmpl",
-		"./ui/html/base.layout.tmpl",
-		"./ui/html/footer.partial.tmpl",
-	}
-
 	data := timetracker.TemplateData{Tasks: tasks}
 
+	templateCache, err := timetracker.NewTemplateCache()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var ok bool
+
+	data.PageTemplate, ok = templateCache["home.page.tmpl"]
+	if !ok {
+		t.Error("template does not exist: home.page.tmpl")
+	}
+
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		timetracker.Render(w, r, data, files)
+		data.Render(w, r)
 	}))
+
+	WaitForServerRoute(ts.URL)
 
 	client := ts.Client()
 
@@ -106,21 +63,22 @@ func TestRenderHomePage(t *testing.T) {
 	}
 	defer rs.Body.Close()
 
-	body, err := io.ReadAll(rs.Body)
+	if rs.StatusCode != http.StatusOK {
+		t.Fatal(err)
+	}
+
+	got, err := io.ReadAll(rs.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !bytes.Contains(body, []byte("piano")) {
-		t.Errorf("want body to contain %q", []byte("piano"))
+	want, err := ioutil.ReadFile("testdata/home_page_test.txt") // just pass the file name
+	if err != nil {
+		fmt.Print(err)
 	}
 
-	if !bytes.Contains(body, []byte("swim")) {
-		t.Errorf("want body to contain %q", []byte("piano"))
-	}
-
-	if bytes.Contains(body, []byte("zzz")) {
-		t.Errorf("do not want body to contain %q", []byte("zzz"))
+	if strings.TrimSpace(string(want)) != strings.TrimSpace(string(got)) {
+		t.Errorf("want: %s, got: %s", string(want), string(got))
 	}
 
 }
@@ -139,17 +97,26 @@ func TestRenderTaskReportPage(t *testing.T) {
 		},
 	}
 
-	files := []string{
-		"./ui/html/report.page.tmpl",
-		"./ui/html/base.layout.tmpl",
-		"./ui/html/footer.partial.tmpl",
-	}
-
 	data := timetracker.TemplateData{Reports: reports}
 
+	templateCache, err := timetracker.NewTemplateCache()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var ok bool
+
+	data.PageTemplate, ok = templateCache["report.page.tmpl"]
+	if !ok {
+		t.Error("template does not exist: report.page.tmpl")
+
+	}
+
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		timetracker.Render(w, r, data, files)
+		data.Render(w, r)
 	}))
+
+	WaitForServerRoute(ts.URL)
 
 	client := ts.Client()
 
@@ -159,21 +126,36 @@ func TestRenderTaskReportPage(t *testing.T) {
 	}
 	defer rs.Body.Close()
 
-	body, err := io.ReadAll(rs.Body)
+	if rs.StatusCode != http.StatusOK {
+		t.Fatal(err)
+	}
+
+	got, err := io.ReadAll(rs.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !bytes.Contains(body, []byte("piano")) {
-		t.Errorf("want body to contain %q", []byte("piano"))
+	want, err := ioutil.ReadFile("testdata/report_page_test.txt") // just pass the file name
+	if err != nil {
+		fmt.Print(err)
 	}
 
-	if !bytes.Contains(body, []byte("swim")) {
-		t.Errorf("want body to contain %q", []byte("piano"))
+	if strings.TrimSpace(string(want)) != strings.TrimSpace(string(got)) {
+		t.Errorf("want: %s, got: %s", string(want), string(got))
 	}
 
-	if bytes.Contains(body, []byte("zzz")) {
-		t.Errorf("do not want body to contain %q", []byte("zzz"))
+}
+
+func WaitForServerRoute(url string) {
+
+	for {
+		_, err := net.Dial("tcp", url)
+		if err == nil {
+			log.Println("tcp not listening")
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		break
 	}
 
 }

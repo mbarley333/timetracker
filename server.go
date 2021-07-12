@@ -12,18 +12,21 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"text/template"
 	"time"
+	"timetracker/ui"
 
 	_ "github.com/lib/pq"
 )
 
 type Server struct {
-	httpServer *http.Server
-	Addr       string
-	logger     *log.Logger
-	Port       int
-	LogLevel   string
-	tasks      *Env
+	httpServer    *http.Server
+	Addr          string
+	logger        *log.Logger
+	Port          int
+	LogLevel      string
+	tasks         *Env
+	templateCache map[string]*template.Template
 }
 
 // type to hold options for Server struct
@@ -37,9 +40,9 @@ func WithPort(port int) Option {
 	}
 }
 
-func WithLogLevel(loglevel string) Option {
+func WithNoLogging() Option {
 	return func(s *Server) {
-		s.LogLevel = loglevel
+		s.LogLevel = "quiet"
 	}
 }
 
@@ -94,17 +97,26 @@ func (s *Server) ListenAndServe() error {
 		ErrorLog:          s.logger,
 	}
 
+	s.templateCache, err = NewTemplateCache()
+	if err != nil {
+		return err
+	}
+
 	s.logger.Println("Starting up on ", s.Addr)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.home)
 	mux.HandleFunc("/task/report", s.showTaskReport)
 	mux.HandleFunc("/task/create", s.createTask)
 
-	fileServer := http.FileServer(http.Dir("./ui/static/"))
-
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+	fileServer := http.FileServer(http.FS(ui.Files))
+	mux.Handle("/static/", fileServer)
 
 	s.httpServer.Handler = mux
+
+	s.templateCache, err = NewTemplateCache()
+	if err != nil {
+		return err
+	}
 
 	if err := s.httpServer.ListenAndServe(); err != nil {
 		WaitForServerRoute(s.Addr + "/task")

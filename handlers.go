@@ -1,16 +1,21 @@
 package timetracker
 
 import (
+	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
+	"path/filepath"
 	"text/template"
+	"timetracker/ui"
 )
 
 // TemplateData is used to load struct
 // data into the ui .tmpl files
 type TemplateData struct {
-	Reports []Report
-	Tasks   []Task
+	Reports      []Report
+	Tasks        []Task
+	PageTemplate *template.Template
 }
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
@@ -27,13 +32,15 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	}
 	data := TemplateData{Tasks: tasks}
 
-	files := []string{
-		"./ui/html/home.page.tmpl",
-		"./ui/html/base.layout.tmpl",
-		"./ui/html/footer.partial.tmpl",
+	var ok bool
+
+	data.PageTemplate, ok = s.templateCache["home.page.tmpl"]
+	if !ok {
+		fmt.Fprintf(w, fmt.Sprint("template does not exist: home.page.tmpl"))
+		return
 	}
 
-	Render(w, r, data, files)
+	data.Render(w, r)
 }
 
 func (s *Server) showTaskReport(w http.ResponseWriter, r *http.Request) {
@@ -50,41 +57,92 @@ func (s *Server) showTaskReport(w http.ResponseWriter, r *http.Request) {
 	}
 	data := TemplateData{Reports: report}
 
-	files := []string{
-		"./ui/html/report.page.tmpl",
-		"./ui/html/base.layout.tmpl",
-		"./ui/html/footer.partial.tmpl",
+	var ok bool
+
+	data.PageTemplate, ok = s.templateCache["report.page.tmpl"]
+	if !ok {
+		fmt.Fprintf(w, fmt.Sprintf("template does not exist: report.page.tmpl"))
+		return
 	}
 
-	Render(w, r, data, files)
+	data.Render(w, r)
 
 }
 
 func (s *Server) createTask(w http.ResponseWriter, r *http.Request) {
 
-	data := TemplateData{}
+	task := NewTask("go")
+	tasks := []Task{}
+	tasks = append(tasks, task)
 
-	files := []string{
-		"./ui/html/create.page.tmpl",
-		"./ui/html/base.layout.tmpl",
-		"./ui/html/footer.partial.tmpl",
+	data := TemplateData{Tasks: tasks}
+	var ok bool
+
+	data.PageTemplate, ok = s.templateCache["create.page.tmpl"]
+	if !ok {
+		fmt.Fprint(w, fmt.Sprintf("template does not exist: report.page.tmpl"))
+		return
 	}
 
-	Render(w, r, data, files)
+	data.Render(w, r)
 
 }
 
-func Render(w http.ResponseWriter, r *http.Request, data TemplateData, files []string) {
+// func (s *Server) startedTask(w http.ResponseWriter, r *http.Request) {
 
-	ts, err := template.ParseFiles(files...)
-	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-	err = ts.Execute(w, data)
+// 	data := TemplateData{}
+
+// 	var ok bool
+
+// 	data.PageTemplate, ok = s.templateCache["started.page.tmpl"]
+// 	if !ok {
+// 		fmt.Fprint(w, fmt.Sprintf("template does not exist: report.page.tmpl"))
+// 		return
+// 	}
+
+// 	data.Render(w, r)
+
+// }
+
+func (td TemplateData) Render(w http.ResponseWriter, r *http.Request) {
+
+	ts := td.PageTemplate
+
+	err := ts.Execute(w, td)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 
+}
+
+func NewTemplateCache() (map[string]*template.Template, error) {
+	cache := map[string]*template.Template{}
+
+	pages, err := fs.Glob(ui.Files, "html/*.page.tmpl")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, page := range pages {
+		name := filepath.Base(page)
+
+		ts, err := template.New(name).ParseFS(ui.Files, page)
+		if err != nil {
+			return nil, err
+		}
+
+		ts, err = ts.ParseFS(ui.Files, "html/*.layout.tmpl")
+		if err != nil {
+			return nil, err
+		}
+
+		ts, err = ts.ParseFS(ui.Files, "html/*.partial.tmpl")
+		if err != nil {
+			return nil, err
+		}
+
+		cache[name] = ts
+	}
+	return cache, nil
 }
