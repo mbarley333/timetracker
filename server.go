@@ -106,7 +106,9 @@ func (s *Server) ListenAndServe() error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.home)
 	mux.HandleFunc("/task/report", s.showTaskReport)
-	mux.HandleFunc("/task/create", s.createTask)
+	mux.HandleFunc("/task/create", s.createNewTaskForm)
+	mux.HandleFunc("/task/started", s.startedTask)
+	mux.HandleFunc("/task/stop", s.stopTask)
 
 	fileServer := http.FileServer(http.FS(ui.Files))
 	mux.Handle("/static/", fileServer)
