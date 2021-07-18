@@ -11,7 +11,7 @@ import (
 
 func TestGenerateInsertSQL(t *testing.T) {
 	t.Parallel()
-	want := `INSERT INTO tasks(task_name, start_time, elapsed_time) VALUES($1, $2, $3)`
+	want := `INSERT INTO tasks(task_name, start_time) VALUES($1, $2) RETURNING id`
 
 	got, err := timetracker.GenerateSQLQuery("insert")
 	if err != nil {
@@ -26,7 +26,7 @@ func TestGenerateInsertSQL(t *testing.T) {
 
 func TestGenerateReportSQL(t *testing.T) {
 	t.Parallel()
-	want := `SELECT task_name, SUM(elapsed_time) total_time FROM tasks GROUP BY task_name`
+	want := `SELECT task_name, SUM(elapsed_time) total_time FROM tasks GROUP BY task_name ORDER BY SUM(elapsed_time) DESC`
 
 	got, err := timetracker.GenerateSQLQuery("report")
 	if err != nil {
@@ -58,14 +58,14 @@ func TestParseRowsTasks(t *testing.T) {
 
 	want := []timetracker.Task{
 		{
-			Name:        "piano",
-			StartTime:   time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
-			ElapsedTime: 10.0,
+			Name:           "piano",
+			StartTime:      time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+			ElapsedTimeSec: 10.0,
 		},
 		{
-			Name:        "swim",
-			StartTime:   time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
-			ElapsedTime: 10.0,
+			Name:           "swim",
+			StartTime:      time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+			ElapsedTimeSec: 10.0,
 		},
 	}
 
@@ -130,7 +130,7 @@ func TestParseRowsReport(t *testing.T) {
 		AddRow("piano", 10).
 		AddRow("swim", 10)
 
-	mock.ExpectQuery("SELECT task_name, SUM(elapsed_time) total_time FROM tasks GROUP BY task_name").WillReturnRows(rows)
+	mock.ExpectQuery("SELECT task_name, SUM(elapsed_time) total_time FROM tasks GROUP BY task_name ORDER BY SUM(elapsed_time) DESC").WillReturnRows(rows)
 
 	e := &timetracker.Env{Db: db}
 

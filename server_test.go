@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 	"timetracker"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestRenderHomePage(t *testing.T) {
@@ -24,14 +26,14 @@ func TestRenderHomePage(t *testing.T) {
 
 	tasks := []timetracker.Task{
 		{
-			Name:        "piano",
-			StartTime:   startTime,
-			ElapsedTime: 10.0,
+			Name:           "piano",
+			StartTime:      startTime,
+			ElapsedTimeSec: 10.0,
 		},
 		{
-			Name:        "swim",
-			StartTime:   startTime,
-			ElapsedTime: 10.0,
+			Name:           "swim",
+			StartTime:      startTime,
+			ElapsedTimeSec: 10.0,
 		},
 	}
 
@@ -77,8 +79,8 @@ func TestRenderHomePage(t *testing.T) {
 		fmt.Print(err)
 	}
 
-	if strings.TrimSpace(string(want)) != strings.TrimSpace(string(got)) {
-		t.Errorf("want: %s, got: %s", string(want), string(got))
+	if !cmp.Equal(want, got) {
+		t.Error(cmp.Diff(want, got))
 	}
 
 }

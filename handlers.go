@@ -19,13 +19,13 @@ type TemplateData struct {
 	PageTemplate *template.Template
 }
 
-func (s *Server) home(w http.ResponseWriter, r *http.Request) {
+func (a *Application) home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
 	}
 
-	tasks, err := s.tasks.GetLatest()
+	tasks, err := a.tasks.GetLatest()
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -35,7 +35,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 
 	var ok bool
 
-	data.PageTemplate, ok = s.templateCache["home.page.tmpl"]
+	data.PageTemplate, ok = a.templateCache["home.page.tmpl"]
 	if !ok {
 		fmt.Fprintf(w, fmt.Sprint("template does not exist: home.page.tmpl"))
 		return
@@ -44,13 +44,13 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	data.Render(w, r)
 }
 
-func (s *Server) showTaskReport(w http.ResponseWriter, r *http.Request) {
+func (a *Application) showTaskReport(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/task/report" {
 		http.NotFound(w, r)
 		return
 	}
 
-	report, err := s.tasks.GetReport()
+	report, err := a.tasks.GetReport()
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -60,7 +60,7 @@ func (s *Server) showTaskReport(w http.ResponseWriter, r *http.Request) {
 
 	var ok bool
 
-	data.PageTemplate, ok = s.templateCache["report.page.tmpl"]
+	data.PageTemplate, ok = a.templateCache["report.page.tmpl"]
 	if !ok {
 		fmt.Fprintf(w, fmt.Sprintf("template does not exist: report.page.tmpl"))
 		return
@@ -70,13 +70,13 @@ func (s *Server) showTaskReport(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *Server) createNewTaskForm(w http.ResponseWriter, r *http.Request) {
+func (a *Application) createNewTaskForm(w http.ResponseWriter, r *http.Request) {
 
 	data := TemplateData{}
 
 	var ok bool
 
-	data.PageTemplate, ok = s.templateCache["create.page.tmpl"]
+	data.PageTemplate, ok = a.templateCache["create.page.tmpl"]
 	if !ok {
 		fmt.Fprint(w, fmt.Sprintf("template does not exist: report.page.tmpl"))
 		return
@@ -84,13 +84,9 @@ func (s *Server) createNewTaskForm(w http.ResponseWriter, r *http.Request) {
 
 	data.Render(w, r)
 
-	fmt.Println("test")
-
-	//http.Redirect(w, r, "/home", http.StatusSeeOther)
-
 }
 
-func (s *Server) startedTask(w http.ResponseWriter, r *http.Request) {
+func (a *Application) startedTask(w http.ResponseWriter, r *http.Request) {
 
 	err := r.ParseForm()
 	if err != nil {
@@ -98,10 +94,59 @@ func (s *Server) startedTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newTask := r.Form.Get("task")
+	taskName := r.Form.Get("task")
 
-	task := NewTask(newTask)
-	task.Start(time.Now())
+	fmt.Printf("startedTask: %s", taskName)
+
+	task := NewTask(taskName)
+	task.StartAt(time.Now())
+
+	tasks := []Task{}
+	tasks = append(tasks, task)
+
+	//set values in struct to persist data across HTML pages
+	a.taskid, err = a.tasks.Create(task)
+	if err != nil {
+		fmt.Fprint(w, http.StatusInternalServerError)
+		return
+	}
+	a.taskStartTime = task.StartTime
+
+	data := TemplateData{Tasks: tasks}
+	var ok bool
+
+	data.PageTemplate, ok = a.templateCache["started.page.tmpl"]
+	if !ok {
+		fmt.Fprint(w, fmt.Sprintf("template does not exist: report.page.tmpl"))
+		return
+	}
+
+	data.Render(w, r)
+
+}
+
+func (a *Application) stopTask(w http.ResponseWriter, r *http.Request) {
+
+	err := r.ParseForm()
+	if err != nil {
+		fmt.Fprint(w, http.StatusBadRequest)
+		return
+	}
+
+	taskName := r.PostForm.Get("task") //r.Form.Get("task")
+
+	task := Task{
+		Id:        a.taskid,
+		Name:      taskName,
+		StartTime: a.taskStartTime,
+	}
+	task.Stop(time.Now())
+
+	err = a.tasks.UpdateStopped(task)
+	if err != nil {
+		fmt.Fprint(w, http.StatusInternalServerError)
+		return
+	}
 
 	tasks := []Task{}
 	tasks = append(tasks, task)
@@ -109,63 +154,13 @@ func (s *Server) startedTask(w http.ResponseWriter, r *http.Request) {
 	data := TemplateData{Tasks: tasks}
 	var ok bool
 
-	data.PageTemplate, ok = s.templateCache["started.page.tmpl"]
+	data.PageTemplate, ok = a.templateCache["stop.page.tmpl"]
 	if !ok {
 		fmt.Fprint(w, fmt.Sprintf("template does not exist: report.page.tmpl"))
 		return
 	}
 
 	data.Render(w, r)
-
-}
-
-func (s *Server) stopTask(w http.ResponseWriter, r *http.Request) {
-
-	err := r.ParseForm()
-	if err != nil {
-		fmt.Fprint(w, http.StatusBadRequest)
-		return
-	}
-
-	newTask := r.Form.Get("task")
-	log.Println(newTask)
-
-	// task := NewTask(newTask)
-	// task.Start(time.Now())
-
-	// tasks := []Task{}
-	// tasks = append(tasks, task)
-
-	// data := TemplateData{Tasks: tasks}
-	// var ok bool
-	//fmt.Println(time.Parse(time.RFC3339, strStart))
-
-	// startTime, err := time.Parse(time.RFC3339, strStart)
-	// if err != nil {
-	// 	fmt.Fprint(w, http.StatusBadRequest)
-	// 	return
-	// }
-
-	// task := Task{
-	// 	Name:      r.PostForm.Get("task"),
-	// 	StartTime: startTime,
-	// }
-	// task.Stop(time.Now())
-	// tasks := []Task{}
-
-	// fmt.Println(task)
-	// tasks = append(tasks, task)
-
-	// data := TemplateData{Tasks: tasks}
-	// var ok bool
-
-	// data.PageTemplate, ok = s.templateCache["stop.page.tmpl"]
-	// if !ok {
-	// 	fmt.Fprint(w, fmt.Sprintf("template does not exist: report.page.tmpl"))
-	// 	return
-	// }
-
-	// data.Render(w, r)
 
 }
 

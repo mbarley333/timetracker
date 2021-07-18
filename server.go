@@ -16,17 +16,24 @@ import (
 	"time"
 	"timetracker/ui"
 
+	"github.com/golangcollege/sessions"
+
 	_ "github.com/lib/pq"
 )
 
-type Server struct {
-	httpServer    *http.Server
-	Addr          string
-	logger        *log.Logger
-	Port          int
-	LogLevel      string
-	tasks         *Env
+type Application struct {
+	taskid        int
+	taskStartTime time.Time
 	templateCache map[string]*template.Template
+	tasks         *Env //db conn
+}
+
+type Server struct {
+	httpServer *http.Server
+	Addr       string
+	logger     *log.Logger
+	Port       int
+	LogLevel   string
 }
 
 // type to hold options for Server struct
@@ -88,7 +95,23 @@ func (s *Server) ListenAndServe() error {
 	}
 	defer db.Close()
 
-	s.tasks = &Env{Db: db}
+	templateCache, err := NewTemplateCache()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	secret, err := GetEnvironmentVariable("TIMETRACKER_SESSION")
+	if err != nil {
+		log.Fatal(err)
+	}
+	session := sessions.New([]byte(secret))
+	session.Lifetime = 12 * time.Hour
+
+	app := Application{
+		tasks:         &Env{Db: db},
+		templateCache: templateCache,
+	}
+	//s.tasks = &Env{Db: db}
 
 	s.httpServer = &http.Server{
 		Addr:              s.Addr,
@@ -97,28 +120,8 @@ func (s *Server) ListenAndServe() error {
 		ErrorLog:          s.logger,
 	}
 
-	s.templateCache, err = NewTemplateCache()
-	if err != nil {
-		return err
-	}
-
+	s.httpServer.Handler = app.routes()
 	s.logger.Println("Starting up on ", s.Addr)
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", s.home)
-	mux.HandleFunc("/task/report", s.showTaskReport)
-	mux.HandleFunc("/task/create", s.createNewTaskForm)
-	mux.HandleFunc("/task/started", s.startedTask)
-	mux.HandleFunc("/task/stop", s.stopTask)
-
-	fileServer := http.FileServer(http.FS(ui.Files))
-	mux.Handle("/static/", fileServer)
-
-	s.httpServer.Handler = mux
-
-	s.templateCache, err = NewTemplateCache()
-	if err != nil {
-		return err
-	}
 
 	if err := s.httpServer.ListenAndServe(); err != nil {
 		WaitForServerRoute(s.Addr + "/task")
@@ -199,4 +202,19 @@ func BuildDbConnection() (string, error) {
 
 	return fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable",
 		host, convertPort, user, dbname), nil
+}
+
+func (app *Application) routes() http.Handler {
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", app.home)
+	mux.HandleFunc("/task/report", app.showTaskReport)
+	mux.HandleFunc("/task/create", app.createNewTaskForm)
+	mux.HandleFunc("/task/started", app.startedTask)
+	mux.HandleFunc("/task/stop", app.stopTask)
+
+	fileServer := http.FileServer(http.FS(ui.Files))
+	mux.Handle("/static/", fileServer)
+
+	return mux
 }
