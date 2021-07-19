@@ -7,6 +7,9 @@ import (
 	"timetracker"
 )
 
+var startTime = time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
+var stopTime = time.Date(2021, 1, 1, 0, 10, 0, 0, time.UTC)
+
 func TestStartTracking(t *testing.T) {
 
 	task := timetracker.NewTask("piano")
@@ -15,7 +18,7 @@ func TestStartTracking(t *testing.T) {
 		t.Error("task is already active")
 	}
 
-	task.Start(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC))
+	task.StartAt(startTime)
 
 	if !task.GetActive() {
 		t.Error("task should be active")
@@ -27,13 +30,13 @@ func TestStopTracking(t *testing.T) {
 
 	task := timetracker.NewTask("piano")
 
-	task.Start(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC))
+	task.StartAt(startTime)
 
 	if !task.GetActive() {
 		t.Error("task should be active")
 	}
 
-	task.Stop(time.Date(2021, 1, 1, 0, 10, 0, 0, time.UTC))
+	task.Stop(stopTime)
 
 	if task.GetActive() {
 		t.Error("task should not  be active")
@@ -45,13 +48,15 @@ func TestStartTime(t *testing.T) {
 
 	task := timetracker.NewTask("piano")
 
-	task.Start(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC))
+	want := startTime
 
-	if task.GetStartTime().IsZero() {
-		t.Error("start time should not be zero")
+	task.StartAt(want)
+
+	got := task.StartTime
+
+	if !got.Equal(want) {
+		t.Fatalf("want: %s, got:%s", want, got)
 	}
-
-	task.Stop(time.Date(2021, 1, 1, 0, 10, 0, 0, time.UTC))
 
 }
 
@@ -59,13 +64,21 @@ func TestElapsedTime(t *testing.T) {
 
 	task := timetracker.NewTask("piano")
 
-	task.Start(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC))
+	task.StartAt(startTime)
 
-	task.Stop(time.Date(2021, 1, 1, 0, 10, 0, 0, time.UTC))
+	task.Stop(stopTime)
 
-	elapsed := task.GetElapsedTime()
-	if elapsed == 0.0 {
-		t.Error("elapsed time should not be zero")
+	got := task.ElapsedTime.Seconds()
+	want := 10 * time.Minute.Seconds()
+
+	if want != got {
+		t.Errorf("want: %f, got: %f", want, got)
+	}
+
+	got = task.ElapsedTimeSec
+
+	if want != got {
+		t.Errorf("want: %f, got: %f", want, got)
 	}
 
 }
@@ -76,19 +89,18 @@ func TestGetMessage(t *testing.T) {
 
 	task := timetracker.NewTask(name)
 
-	task.Start(time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC))
+	task.StartAt(startTime)
 
-	task.Stop(time.Date(2021, 1, 1, 0, 10, 0, 0, time.UTC))
+	task.Stop(stopTime)
 
-	elapsed := task.GetElapsedTime()
+	elapsed := task.ElapsedTime
 
 	got := task.GetMessage()
 
-	want := fmt.Sprintf("You spent %.1f seconds on the %s task", elapsed, name)
+	want := fmt.Sprintf("You spent %s seconds on the %s task", elapsed, name)
 
 	if want != got {
 		t.Errorf("Wanted: %s, got %s", want, got)
 	}
 
 }
-
