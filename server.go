@@ -16,8 +16,6 @@ import (
 	"time"
 	"timetracker/ui"
 
-	"github.com/golangcollege/sessions"
-
 	_ "github.com/lib/pq"
 )
 
@@ -75,7 +73,7 @@ func NewServer(opts ...Option) *Server {
 	}
 
 	// update struct...perhaps there is a better way.
-	s.Addr = fmt.Sprintf("127.0.0.1:%d", s.Port)
+	s.Addr = fmt.Sprintf(":%d", s.Port)
 	s.logger = newLogger
 
 	return s
@@ -99,13 +97,6 @@ func (s *Server) ListenAndServe() error {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	secret, err := GetEnvironmentVariable("TIMETRACKER_SESSION")
-	if err != nil {
-		log.Fatal(err)
-	}
-	session := sessions.New([]byte(secret))
-	session.Lifetime = 12 * time.Hour
 
 	app := Application{
 		tasks:         &Env{Db: db},
