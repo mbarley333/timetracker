@@ -114,8 +114,6 @@ func GenerateSQLQuery(sql string) (string, error) {
 		return `INSERT INTO tasks(task_name, start_time) VALUES($1, $2) RETURNING id`, nil
 	case "report":
 		return `SELECT task_name, SUM(elapsed_time) total_time FROM tasks GROUP BY task_name ORDER BY SUM(elapsed_time) DESC`, nil
-	case "getTask":
-		return `SELECT task_name, start_time, elapsed_time FROM tasks WHERE id=$1`, nil
 	case "latest":
 		return `SELECT task_name, start_time, elapsed_time FROM tasks ORDER BY start_time DESC LIMIT 10`, nil
 	case "updateStopped":

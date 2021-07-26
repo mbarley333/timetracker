@@ -23,7 +23,6 @@ type Application struct {
 	taskid        int
 	taskStartTime time.Time
 	templateCache map[string]*template.Template
-	tasks         *Env //db conn
 	TaskStore     TaskStore
 }
 
