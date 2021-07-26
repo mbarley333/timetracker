@@ -4,3 +4,8 @@ CREATE TABLE tasks (
     start_time TIMESTAMP NOT NULL,
     elapsed_time NUMERIC DEFAULT 0
 );
+
+
+CREATE TABLE sessions (
+    taskid INTEGER
+);

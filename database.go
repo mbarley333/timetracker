@@ -45,7 +45,7 @@ func (e *Env) UpdateStopped(task Task) error {
 
 }
 
-func (e *Env) GetReport() ([]Report, error) {
+func (e Env) GetReport() ([]Report, error) {
 
 	query, err := GenerateSQLQuery("report")
 	if err != nil {
@@ -78,14 +78,35 @@ func (e *Env) GetLatest() ([]Task, error) {
 	}
 	defer rows.Close()
 
-	reports, err := ParseRowsTasks(rows)
+	tasks, err := ParseRowsTasks(rows)
 	if err != nil {
 		return []Task{}, fmt.Errorf("failed to parse rows: %s", err)
 	}
 
-	return reports, nil
+	return tasks, nil
 
 }
+
+// func (e *Env) GetTaskById() ([]Task, error) {
+
+// 	query, err := GenerateSQLQuery("getTask")
+// 	if err != nil {
+// 		return []Task{}, fmt.Errorf("error: %s", err)
+// 	}
+// 	rows, err := e.Db.Query(query)
+// 	if err != nil {
+// 		return []Task{}, fmt.Errorf("failed to get report: %s", err)
+// 	}
+// 	defer rows.Close()
+
+// 	tasks, err := ParseRowsTasks(rows)
+// 	if err != nil {
+// 		return []Task{}, fmt.Errorf("failed to parse rows: %s", err)
+// 	}
+
+// 	return tasks, nil
+
+// }
 
 func GenerateSQLQuery(sql string) (string, error) {
 	switch sql {
@@ -93,6 +114,8 @@ func GenerateSQLQuery(sql string) (string, error) {
 		return `INSERT INTO tasks(task_name, start_time) VALUES($1, $2) RETURNING id`, nil
 	case "report":
 		return `SELECT task_name, SUM(elapsed_time) total_time FROM tasks GROUP BY task_name ORDER BY SUM(elapsed_time) DESC`, nil
+	case "getTask":
+		return `SELECT task_name, start_time, elapsed_time FROM tasks WHERE id=$1`, nil
 	case "latest":
 		return `SELECT task_name, start_time, elapsed_time FROM tasks ORDER BY start_time DESC LIMIT 10`, nil
 	case "updateStopped":

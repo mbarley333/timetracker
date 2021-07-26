@@ -25,7 +25,7 @@ func (a *Application) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tasks, err := a.tasks.GetLatest()
+	tasks, err := a.TaskStore.GetLatest()
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -50,7 +50,7 @@ func (a *Application) showTaskReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	report, err := a.tasks.GetReport()
+	report, err := a.TaskStore.GetReport()
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -105,7 +105,8 @@ func (a *Application) startedTask(w http.ResponseWriter, r *http.Request) {
 	tasks = append(tasks, task)
 
 	//set values in struct to persist data across HTML pages
-	a.taskid, err = a.tasks.Create(task)
+	//a.taskid, err = a.tasks.Create(task)
+	a.taskid, err = a.TaskStore.Create(task)
 	if err != nil {
 		fmt.Fprint(w, http.StatusInternalServerError)
 		return
@@ -142,7 +143,7 @@ func (a *Application) stopTask(w http.ResponseWriter, r *http.Request) {
 	}
 	task.Stop(time.Now())
 
-	err = a.tasks.UpdateStopped(task)
+	err = a.TaskStore.UpdateStopped(task)
 	if err != nil {
 		fmt.Fprint(w, http.StatusInternalServerError)
 		return

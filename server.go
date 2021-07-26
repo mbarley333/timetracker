@@ -24,6 +24,7 @@ type Application struct {
 	taskStartTime time.Time
 	templateCache map[string]*template.Template
 	tasks         *Env //db conn
+	TaskStore     TaskStore
 }
 
 type Server struct {
@@ -32,6 +33,13 @@ type Server struct {
 	logger     *log.Logger
 	Port       int
 	LogLevel   string
+}
+
+type TaskStore interface {
+	Create(task Task) (int, error)
+	UpdateStopped(task Task) error
+	GetReport() ([]Report, error)
+	GetLatest() ([]Task, error)
 }
 
 // type to hold options for Server struct
@@ -99,8 +107,8 @@ func (s *Server) ListenAndServe() error {
 	}
 
 	app := Application{
-		tasks:         &Env{Db: db},
 		templateCache: templateCache,
+		TaskStore:     &Env{Db: db},
 	}
 	//s.tasks = &Env{Db: db}
 
