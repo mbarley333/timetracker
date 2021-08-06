@@ -1,4 +1,4 @@
-CREATE TABLE tasks (
+CREATE TABLE IF NOT EXISTS tasks (
     id SERIAL PRIMARY KEY,
     task_name VARCHAR(255) NOT NULL,
     start_time TIMESTAMP NOT NULL,
@@ -6,6 +6,7 @@ CREATE TABLE tasks (
 );
 
 
-CREATE TABLE sessions (
-    taskid INTEGER
+CREATE TABLE IF NOT EXISTS task_session(
+    userName varchar(100) PRIMARY KEY,
+    taskid int
 );

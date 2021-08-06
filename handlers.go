@@ -19,7 +19,7 @@ type TemplateData struct {
 	PageTemplate *template.Template
 }
 
-func (a *Application) home(w http.ResponseWriter, r *http.Request) {
+func (a *Server) home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
@@ -44,7 +44,7 @@ func (a *Application) home(w http.ResponseWriter, r *http.Request) {
 	data.Render(w, r)
 }
 
-func (a *Application) showTaskReport(w http.ResponseWriter, r *http.Request) {
+func (a *Server) showTaskReport(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/task/report" {
 		http.NotFound(w, r)
 		return
@@ -70,7 +70,7 @@ func (a *Application) showTaskReport(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (a *Application) createNewTaskForm(w http.ResponseWriter, r *http.Request) {
+func (a *Server) createNewTaskForm(w http.ResponseWriter, r *http.Request) {
 
 	data := TemplateData{}
 
@@ -86,7 +86,7 @@ func (a *Application) createNewTaskForm(w http.ResponseWriter, r *http.Request) 
 
 }
 
-func (a *Application) startedTask(w http.ResponseWriter, r *http.Request) {
+func (a *Server) startedTask(w http.ResponseWriter, r *http.Request) {
 
 	err := r.ParseForm()
 	if err != nil {
@@ -126,7 +126,7 @@ func (a *Application) startedTask(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (a *Application) stopTask(w http.ResponseWriter, r *http.Request) {
+func (s *Server) stopTask(w http.ResponseWriter, r *http.Request) {
 
 	err := r.ParseForm()
 	if err != nil {
@@ -137,13 +137,13 @@ func (a *Application) stopTask(w http.ResponseWriter, r *http.Request) {
 	taskName := r.PostForm.Get("task") //r.Form.Get("task")
 
 	task := Task{
-		Id:        a.taskid,
+		Id:        s.taskid,
 		Name:      taskName,
-		StartTime: a.taskStartTime,
+		StartTime: s.taskStartTime,
 	}
 	task.Stop(time.Now())
 
-	err = a.TaskStore.UpdateStopped(task)
+	err = s.TaskStore.UpdateStopped(task)
 	if err != nil {
 		fmt.Fprint(w, http.StatusInternalServerError)
 		return
@@ -155,7 +155,7 @@ func (a *Application) stopTask(w http.ResponseWriter, r *http.Request) {
 	data := TemplateData{Tasks: tasks}
 	var ok bool
 
-	data.PageTemplate, ok = a.templateCache["stop.page.tmpl"]
+	data.PageTemplate, ok = s.templateCache["stop.page.tmpl"]
 	if !ok {
 		fmt.Fprint(w, fmt.Sprintf("template does not exist: report.page.tmpl"))
 		return

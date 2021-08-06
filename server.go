@@ -2,7 +2,6 @@ package timetracker
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -19,42 +18,57 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type Application struct {
-	taskid        int
-	taskStartTime time.Time
-	templateCache map[string]*template.Template
-	TaskStore     TaskStore
+type TaskStore interface {
+	Create(task Task) (int, error)
+	UpdateStopped(Task) error
+	GetReport() ([]Report, error)
+	GetLatest() ([]Task, error)
+	GetTaskByName(string) (Task, error)
+	GetTaskById(int) (Task, error)
+	Delete(Task) error
+	NewTaskSession(Task) error
 }
 
 type Server struct {
-	httpServer *http.Server
-	Addr       string
-	logger     *log.Logger
-	Port       int
-	LogLevel   string
-}
-
-type TaskStore interface {
-	Create(task Task) (int, error)
-	UpdateStopped(task Task) error
-	GetReport() ([]Report, error)
-	GetLatest() ([]Task, error)
+	httpServer    *http.Server
+	Addr          string
+	logger        *log.Logger
+	Port          int
+	LogLevel      string
+	templateCache map[string]*template.Template
+	TaskStore     TaskStore
+	taskid        int
+	taskStartTime time.Time
 }
 
 // type to hold options for Server struct
-type Option func(*Server)
+type Option func(*Server) error
 
 // override default port for Server
 // provides cleaner user experience
 func WithPort(port int) Option {
-	return func(s *Server) {
+	return func(s *Server) error {
 		s.Port = port
+		return nil
 	}
 }
 
 func WithNoLogging() Option {
-	return func(s *Server) {
+	return func(s *Server) error {
 		s.LogLevel = "quiet"
+		return nil
+	}
+}
+
+func WithPostgresStore(conn string) Option {
+	return func(s *Server) error {
+
+		store, err := NewPostgresStore(conn)
+		if err != nil {
+			return err
+		}
+		s.TaskStore = store
+		return nil
 	}
 }
 
@@ -89,27 +103,11 @@ func NewServer(opts ...Option) *Server {
 
 func (s *Server) ListenAndServe() error {
 
-	psqlInfo, err := BuildDbConnection()
-	if err != nil {
-		return fmt.Errorf("unable to build connection string: %s", err)
-	}
-
-	db, err := sql.Open("postgres", psqlInfo)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	templateCache, err := NewTemplateCache()
+	var err error
+	s.templateCache, err = NewTemplateCache()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	app := Application{
-		templateCache: templateCache,
-		TaskStore:     &Env{Db: db},
-	}
-	//s.tasks = &Env{Db: db}
 
 	s.httpServer = &http.Server{
 		Addr:              s.Addr,
@@ -118,7 +116,7 @@ func (s *Server) ListenAndServe() error {
 		ErrorLog:          s.logger,
 	}
 
-	s.httpServer.Handler = app.routes()
+	s.httpServer.Handler = s.routes()
 	s.logger.Println("Starting up on ", s.Addr)
 
 	if err := s.httpServer.ListenAndServe(); err != nil {
@@ -202,14 +200,14 @@ func BuildDbConnection() (string, error) {
 		host, convertPort, user, dbname), nil
 }
 
-func (app *Application) routes() http.Handler {
+func (s *Server) routes() http.Handler {
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", app.home)
-	mux.HandleFunc("/task/report", app.showTaskReport)
-	mux.HandleFunc("/task/create", app.createNewTaskForm)
-	mux.HandleFunc("/task/started", app.startedTask)
-	mux.HandleFunc("/task/stop", app.stopTask)
+	mux.HandleFunc("/", s.home)
+	mux.HandleFunc("/task/report", s.showTaskReport)
+	mux.HandleFunc("/task/create", s.createNewTaskForm)
+	mux.HandleFunc("/task/started", s.startedTask)
+	mux.HandleFunc("/task/stop", s.stopTask)
 
 	fileServer := http.FileServer(http.FS(ui.Files))
 	mux.Handle("/static/", fileServer)
