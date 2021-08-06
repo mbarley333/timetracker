@@ -16,8 +16,6 @@ import (
 	"time"
 	"timetracker/ui"
 
-	"github.com/golangcollege/sessions"
-
 	_ "github.com/lib/pq"
 )
 
@@ -25,7 +23,7 @@ type Application struct {
 	taskid        int
 	taskStartTime time.Time
 	templateCache map[string]*template.Template
-	tasks         *Env //db conn
+	TaskStore     TaskStore
 }
 
 type Server struct {
@@ -34,6 +32,13 @@ type Server struct {
 	logger     *log.Logger
 	Port       int
 	LogLevel   string
+}
+
+type TaskStore interface {
+	Create(task Task) (int, error)
+	UpdateStopped(task Task) error
+	GetReport() ([]Report, error)
+	GetLatest() ([]Task, error)
 }
 
 // type to hold options for Server struct
@@ -75,7 +80,7 @@ func NewServer(opts ...Option) *Server {
 	}
 
 	// update struct...perhaps there is a better way.
-	s.Addr = fmt.Sprintf("127.0.0.1:%d", s.Port)
+	s.Addr = fmt.Sprintf(":%d", s.Port)
 	s.logger = newLogger
 
 	return s
@@ -100,16 +105,9 @@ func (s *Server) ListenAndServe() error {
 		log.Fatal(err)
 	}
 
-	secret, err := GetEnvironmentVariable("TIMETRACKER_SESSION")
-	if err != nil {
-		log.Fatal(err)
-	}
-	session := sessions.New([]byte(secret))
-	session.Lifetime = 12 * time.Hour
-
 	app := Application{
-		tasks:         &Env{Db: db},
 		templateCache: templateCache,
+		TaskStore:     &Env{Db: db},
 	}
 	//s.tasks = &Env{Db: db}
 

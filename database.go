@@ -45,7 +45,7 @@ func (e *Env) UpdateStopped(task Task) error {
 
 }
 
-func (e *Env) GetReport() ([]Report, error) {
+func (e Env) GetReport() ([]Report, error) {
 
 	query, err := GenerateSQLQuery("report")
 	if err != nil {
@@ -78,14 +78,35 @@ func (e *Env) GetLatest() ([]Task, error) {
 	}
 	defer rows.Close()
 
-	reports, err := ParseRowsTasks(rows)
+	tasks, err := ParseRowsTasks(rows)
 	if err != nil {
 		return []Task{}, fmt.Errorf("failed to parse rows: %s", err)
 	}
 
-	return reports, nil
+	return tasks, nil
 
 }
+
+// func (e *Env) GetTaskById() ([]Task, error) {
+
+// 	query, err := GenerateSQLQuery("getTask")
+// 	if err != nil {
+// 		return []Task{}, fmt.Errorf("error: %s", err)
+// 	}
+// 	rows, err := e.Db.Query(query)
+// 	if err != nil {
+// 		return []Task{}, fmt.Errorf("failed to get report: %s", err)
+// 	}
+// 	defer rows.Close()
+
+// 	tasks, err := ParseRowsTasks(rows)
+// 	if err != nil {
+// 		return []Task{}, fmt.Errorf("failed to parse rows: %s", err)
+// 	}
+
+// 	return tasks, nil
+
+// }
 
 func GenerateSQLQuery(sql string) (string, error) {
 	switch sql {
