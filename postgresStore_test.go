@@ -14,7 +14,7 @@ func TestPostgres(t *testing.T) {
 
 	// setup the machinery to run a test...in this case, we are using so why not spin it up
 	// test the behavior to make sure the interface is working as expected
-
+	t.Parallel()
 	conn := "host=localhost port=5432 user=postgres dbname=timetracker sslmode=disable"
 
 	var store timetracker.TaskStore
@@ -48,7 +48,7 @@ func TestPostgres(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := store.GetTaskById(task.Id)
+	got, err := store.GetTaskBySession()
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -47,6 +47,7 @@ func (p *PostgresStore) NewTaskSession(task Task) error {
 	if err != nil {
 		return fmt.Errorf("unable to generate update SQL")
 	}
+	fmt.Println(query, username, task.Id)
 	_, err = p.Db.Exec(query, username, task.Id)
 	if err != nil {
 		return fmt.Errorf("unable to upsert task_session: %s", err)
@@ -61,7 +62,7 @@ func (p *PostgresStore) UpdateStopped(task Task) error {
 	if err != nil {
 		return fmt.Errorf("unable to generate update SQL")
 	}
-	_, err = p.Db.Exec(query, task.Id, task.ElapsedTimeSec)
+	_, err = p.Db.Exec(query, task.ElapsedTimeSec)
 	if err != nil {
 		return fmt.Errorf("unable to update elapsed time: %s", err)
 	}
@@ -105,14 +106,14 @@ func (p *PostgresStore) GetTaskByName(taskname string) (Task, error) {
 	return task, nil
 }
 
-func (p *PostgresStore) GetTaskById(taskId int) (Task, error) {
+func (p *PostgresStore) GetTaskBySession() (Task, error) {
 
-	query, err := GenerateSQLQuery("byid")
+	query, err := GenerateSQLQuery("bysession")
 	if err != nil {
 		return Task{}, fmt.Errorf("error: %s", err)
 	}
 
-	rows, err := p.Db.Query(query, taskId)
+	rows, err := p.Db.Query(query)
 	if err != nil {
 		return Task{}, fmt.Errorf("failed to get report: %s", err)
 	}
@@ -173,8 +174,8 @@ func GenerateSQLQuery(sql string) (string, error) {
 	switch sql {
 	case "byname":
 		return `SELECT task_name ,SUM(elapsed_time) elapsed_time FROM tasks WHERE task_name=$1 GROUP BY task_name`, nil
-	case "byid":
-		return `SELECT id, task_name, start_time,elapsed_time FROM tasks WHERE id=$1`, nil
+	case "bysession":
+		return `SELECT id, task_name, start_time,elapsed_time FROM tasks t INNER JOIN task_session s ON t.id=s.taskid`, nil
 	case "insert":
 		return `INSERT INTO tasks(task_name, start_time) VALUES($1, $2) RETURNING id`, nil
 	case "report":
@@ -182,12 +183,11 @@ func GenerateSQLQuery(sql string) (string, error) {
 	case "latest":
 		return `SELECT task_name, start_time, elapsed_time FROM tasks ORDER BY start_time DESC LIMIT 10`, nil
 	case "updateStopped":
-		return `UPDATE tasks SET elapsed_time=$2 WHERE id=$1`, nil
+		return `UPDATE tasks t SET elapsed_time=$1 FROM task_session s WHERE t.id = s.taskid`, nil
 	case "delete":
 		return `DELETE FROM tasks WHERE id=$1`, nil
 	case "upsertTaskSession":
-		// stop here ... need to handle upsert by adding user column
-		return `INSERT INTO task_session(username,taskid) VALUES($1,$2) ON CONFLICT(username) DO UPDATE SET taskid=$2`, nil
+		return `INSERT INTO task_session (username,taskid) VALUES ($1,$2) ON CONFLICT (username) DO UPDATE SET taskid=$2`, nil
 	}
 
 	return "", fmt.Errorf("unable to generate sql based on input paramter: %s", sql)

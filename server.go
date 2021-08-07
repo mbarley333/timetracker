@@ -24,7 +24,7 @@ type TaskStore interface {
 	GetReport() ([]Report, error)
 	GetLatest() ([]Task, error)
 	GetTaskByName(string) (Task, error)
-	GetTaskById(int) (Task, error)
+	GetTaskBySession() (Task, error)
 	Delete(Task) error
 	NewTaskSession(Task) error
 }
@@ -37,8 +37,6 @@ type Server struct {
 	LogLevel      string
 	templateCache map[string]*template.Template
 	TaskStore     TaskStore
-	taskid        int
-	taskStartTime time.Time
 }
 
 // type to hold options for Server struct
