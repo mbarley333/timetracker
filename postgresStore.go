@@ -47,7 +47,7 @@ func (p *PostgresStore) NewTaskSession(task Task) error {
 	if err != nil {
 		return fmt.Errorf("unable to generate update SQL")
 	}
-	fmt.Println(query, username, task.Id)
+
 	_, err = p.Db.Exec(query, username, task.Id)
 	if err != nil {
 		return fmt.Errorf("unable to upsert task_session: %s", err)
@@ -76,7 +76,7 @@ func (p *PostgresStore) Delete(task Task) error {
 	if err != nil {
 		return fmt.Errorf("unable to generate update SQL")
 	}
-	fmt.Println(query, task.Id)
+
 	_, err = p.Db.Exec(query, task.Id)
 	if err != nil {
 		return fmt.Errorf("unable to delete record: %s", err)
@@ -119,7 +119,6 @@ func (p *PostgresStore) GetTaskBySession() (Task, error) {
 	}
 	defer rows.Close()
 
-	fmt.Println("rows")
 	task, err := ParseRowsTask(rows)
 	if err != nil {
 		return Task{}, fmt.Errorf("failed to parse rows: %s", err)

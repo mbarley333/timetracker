@@ -146,7 +146,7 @@ func (s *Server) stopTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	task.Name = taskName
-
+	// stop here
 	task.Stop(time.Now())
 
 	err = s.TaskStore.UpdateStopped(task)
