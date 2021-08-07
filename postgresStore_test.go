@@ -1,7 +1,6 @@
 package timetracker_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 	"timetracker"
@@ -54,8 +53,6 @@ func TestPostgres(t *testing.T) {
 	}
 
 	want := task
-
-	fmt.Println(got)
 
 	if !cmp.Equal(want, got) {
 		t.Error(cmp.Diff(want, got))

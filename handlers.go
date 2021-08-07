@@ -137,16 +137,12 @@ func (s *Server) stopTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	taskName := r.PostForm.Get("task") //r.Form.Get("task")
-
 	task, err := s.TaskStore.GetTaskBySession()
 	if err != nil {
 		fmt.Fprint(w, http.StatusInternalServerError)
 		return
 	}
 
-	task.Name = taskName
-	// stop here
 	task.Stop(time.Now())
 
 	err = s.TaskStore.UpdateStopped(task)
