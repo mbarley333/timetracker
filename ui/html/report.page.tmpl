@@ -1,0 +1,23 @@
+{{template "base" .}}
+
+{{define "title"}}Report{{end}}
+
+{{define "main"}}
+    <h2>Task Report</h2>
+    {{if .Reports}}
+     <table>
+        <tr>
+            <th>Task</th>
+            <th>Total Time (sec)</th>
+        </tr>
+        {{range .Reports}}
+        <tr>
+            <td>{{.Task}}</td>
+            <td>{{.TotalTime}}</td>
+        </tr>
+        {{end}}
+    </table>
+    {{else}}
+        <p>There's nothing to see here... yet!</p>
+    {{end}}
+{{end}}

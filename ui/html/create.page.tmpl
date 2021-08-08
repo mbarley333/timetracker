@@ -1,0 +1,23 @@
+{{template "base" .}}
+
+{{define "title"}}Create a New Task{{end}}
+
+{{define "main"}}
+<form action='/task/started' method='POST'>
+    <div>
+        <label>Task:</label>
+        <input type='text' name='task'>
+    </div>
+    <div>
+        <label>Start Time:</label>
+        <input type='text' name='starttime' disabled>
+    </div>
+    <div>
+        <label>Elapsed Time:</label>
+        <input type='text' name='elapsed' disabled>
+    </div>
+    <div>
+        <input type='submit' value='Start task'>
+    </div>
+</form>
+{{end}}

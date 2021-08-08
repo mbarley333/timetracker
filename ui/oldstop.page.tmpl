@@ -1,0 +1,25 @@
+{{template "base" .}}
+
+{{define "title"}}Task completed{{end}}
+
+{{define "main"}}
+<form action='/task/create' method='POST'>
+    {{range .Tasks}}
+    <div>
+        <label>Task:</label>
+        <input type='text' name='task' value="{{.Name}}" disabled>
+    </div>
+    <div>
+        <label>Start Time:</label>
+        <input type='text' name='starttime' value="{{.StartTime}}" disabled>
+    </div>
+    <div>
+        <label>Elapsed Time:</label>
+        <input type='text' name='elapsed' value="{{.ElapsedTime}} disabled>
+    </div>
+    {{end}}
+    <div>
+        <input type='submit' value='Create a new task'>
+    </div>
+</form>
+{{end}}
