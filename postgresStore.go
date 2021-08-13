@@ -16,21 +16,21 @@ const (
 	UPSERT_TASK_SESSION string = `INSERT INTO task_session (username,taskid) VALUES ($1,$2) ON CONFLICT (username) DO UPDATE SET taskid=$2`
 )
 
-type DataStore struct {
+type DBStore struct {
 	Db *sql.DB
 }
 
-func NewDataStore(conn string) (*DataStore, error) {
+func NewPostgresStore(conn string) (*DBStore, error) {
 	db, err := sql.Open("postgres", conn)
 	if err != nil {
 		return nil, err
 	}
-	return &DataStore{Db: db}, nil
+	return &DBStore{Db: db}, nil
 }
 
-func (d *DataStore) Create(task Task) (int, error) {
+func (d *DBStore) Create(task Task) (int, error) {
 
-	stmt, err := p.Db.Prepare(INSERT)
+	stmt, err := d.Db.Prepare(INSERT)
 	if err != nil {
 		return 0, fmt.Errorf("unable to prepare query")
 	}
@@ -45,10 +45,10 @@ func (d *DataStore) Create(task Task) (int, error) {
 	return taskid, nil
 }
 
-func (d *DataStore) NewTaskSession(task Task) error {
+func (d *DBStore) NewTaskSession(task Task) error {
 	username := "app"
 
-	_, err := p.Db.Exec(UPSERT_TASK_SESSION, username, task.Id)
+	_, err := d.Db.Exec(UPSERT_TASK_SESSION, username, task.Id)
 	if err != nil {
 		return fmt.Errorf("unable to upsert task_session: %s", err)
 	}
@@ -56,7 +56,7 @@ func (d *DataStore) NewTaskSession(task Task) error {
 
 }
 
-func (d *DataStore) UpdateStopped(task Task) error {
+func (d *DBStore) UpdateStopped(task Task) error {
 
 	_, err := d.Db.Exec(UPDATE_STOPPED, task.ElapsedTimeSec)
 	if err != nil {
@@ -66,7 +66,7 @@ func (d *DataStore) UpdateStopped(task Task) error {
 
 }
 
-func (d *DataStore) Delete(task Task) error {
+func (d *DBStore) Delete(task Task) error {
 
 	_, err := d.Db.Exec(DELETE, task.Id)
 	if err != nil {
@@ -77,7 +77,7 @@ func (d *DataStore) Delete(task Task) error {
 }
 
 // stop here
-func (d *DataStore) GetTaskByName(taskname string) (Task, error) {
+func (d *DBStore) GetTaskByName(taskname string) (Task, error) {
 
 	rows, err := d.Db.Query(BY_NAME, taskname)
 	if err != nil {
@@ -93,7 +93,7 @@ func (d *DataStore) GetTaskByName(taskname string) (Task, error) {
 	return task, nil
 }
 
-func (d *DataStore) GetTaskBySession() (Task, error) {
+func (d *DBStore) GetTaskBySession() (Task, error) {
 
 	rows, err := d.Db.Query(BY_SESSION)
 	if err != nil {
@@ -109,7 +109,7 @@ func (d *DataStore) GetTaskBySession() (Task, error) {
 	return task, nil
 }
 
-func (d *DataStore) GetReport() ([]Report, error) {
+func (d *DBStore) GetReport() ([]Report, error) {
 
 	rows, err := d.Db.Query(REPORT)
 	if err != nil {
@@ -126,7 +126,7 @@ func (d *DataStore) GetReport() ([]Report, error) {
 
 }
 
-func (d *DataStore) GetLatest() ([]Task, error) {
+func (d *DBStore) GetLatest() ([]Task, error) {
 
 	rows, err := d.Db.Query(LATEST)
 	if err != nil {
