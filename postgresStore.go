@@ -133,7 +133,7 @@ func (p *PostgresStore) GetLatest() ([]Task, error) {
 
 	rows, err := p.Db.Query(LATEST)
 	if err != nil {
-		return []Task{}, fmt.Errorf("failed to get report: %s", err)
+		return []Task{}, fmt.Errorf("failed to get latest: %s", err)
 	}
 	defer rows.Close()
 

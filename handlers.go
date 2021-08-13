@@ -26,11 +26,6 @@ type TemplateData struct {
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 
-	// if r.URL.Path != "/" {
-	// 	http.NotFound(w, r)
-	// 	return
-	// }
-
 	tasks, err := s.TaskStore.GetLatest()
 	if err != nil {
 		log.Println(err.Error())
@@ -39,13 +34,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	}
 	data := TemplateData{Tasks: tasks}
 
-	//var ok bool
-
 	data.PageTemplate = s.templateCache[HOME_PAGE_TEMPLATE]
-	// if !ok {
-	// 	fmt.Fprintf(w, fmt.Sprint("template does not exist: home.page.tmpl"))
-	// 	return
-	// }
 
 	data.Render(w, r)
 }
