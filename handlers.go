@@ -11,6 +11,11 @@ import (
 	"timetracker/ui"
 )
 
+const (
+	HOME_PAGE_TEMPLATE   string = "home.page.tmpl"
+	REPORT_PAGE_TEMPLATE string = "report.page.tmpl"
+)
+
 // TemplateData is used to load struct
 // data into the ui .tmpl files
 type TemplateData struct {
@@ -20,10 +25,11 @@ type TemplateData struct {
 }
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
+
+	// if r.URL.Path != "/" {
+	// 	http.NotFound(w, r)
+	// 	return
+	// }
 
 	tasks, err := s.TaskStore.GetLatest()
 	if err != nil {
@@ -33,13 +39,13 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	}
 	data := TemplateData{Tasks: tasks}
 
-	var ok bool
+	//var ok bool
 
-	data.PageTemplate, ok = s.templateCache["home.page.tmpl"]
-	if !ok {
-		fmt.Fprintf(w, fmt.Sprint("template does not exist: home.page.tmpl"))
-		return
-	}
+	data.PageTemplate = s.templateCache[HOME_PAGE_TEMPLATE]
+	// if !ok {
+	// 	fmt.Fprintf(w, fmt.Sprint("template does not exist: home.page.tmpl"))
+	// 	return
+	// }
 
 	data.Render(w, r)
 }

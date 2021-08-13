@@ -65,49 +65,6 @@ func TestPostgres(t *testing.T) {
 
 }
 
-func TestGenerateInsertSQL(t *testing.T) {
-	t.Parallel()
-	want := `INSERT INTO tasks(task_name, start_time) VALUES($1, $2) RETURNING id`
-
-	got, err := timetracker.GenerateSQLQuery("insert")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if want != got {
-		t.Errorf("wanted: %s, got: %s", want, got)
-	}
-
-}
-
-func TestGenerateReportSQL(t *testing.T) {
-	t.Parallel()
-	want := `SELECT task_name, SUM(elapsed_time) total_time FROM tasks GROUP BY task_name ORDER BY SUM(elapsed_time) DESC`
-
-	got, err := timetracker.GenerateSQLQuery("report")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if want != got {
-		t.Errorf("wanted: %s, got: %s", want, got)
-	}
-}
-
-func TestGenerateLatestSQL(t *testing.T) {
-	t.Parallel()
-	want := `SELECT task_name, start_time, elapsed_time FROM tasks ORDER BY start_time DESC LIMIT 10`
-
-	got, err := timetracker.GenerateSQLQuery("latest")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if want != got {
-		t.Errorf("wanted: %s, got: %s", want, got)
-	}
-}
-
 func TestParseRowsTasks(t *testing.T) {
 
 	t.Parallel()
@@ -139,12 +96,7 @@ func TestParseRowsTasks(t *testing.T) {
 
 	e := &timetracker.PostgresStore{Db: db}
 
-	query, err := timetracker.GenerateSQLQuery("latest")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	results, err := e.Db.Query(query)
+	results, err := e.Db.Query(timetracker.LATEST)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,12 +142,7 @@ func TestParseRowsReport(t *testing.T) {
 
 	e := &timetracker.PostgresStore{Db: db}
 
-	query, err := timetracker.GenerateSQLQuery("report")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	results, err := e.Db.Query(query)
+	results, err := e.Db.Query(timetracker.REPORT)
 	if err != nil {
 		t.Fatal(err)
 	}
