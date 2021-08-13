@@ -1,7 +1,7 @@
 # timetracker
-A Go learning project for tracking time spent on tasks.  Use docker-compose to start up the application and database containers.  LOCAL DEV ONLY.
+A Go learning project to track time spent on tasks.  Use docker-compose to start up the application and database containers.  LOCAL DEV ONLY.
 
-# Requires
+## Requirements
 * Docker
 
 ## Startup
