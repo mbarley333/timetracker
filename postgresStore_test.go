@@ -9,6 +9,62 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func TestPostgres(t *testing.T) {
+
+	// setup the machinery to run a test...in this case, we are using so why not spin it up
+	// test the behavior to make sure the interface is working as expected
+	t.Parallel()
+	conn := "host=localhost port=5432 user=postgres dbname=timetracker sslmode=disable"
+
+	var store timetracker.TaskStore
+	var err error
+
+	store, err = timetracker.NewPostgresStore(conn)
+	if err != nil {
+		t.Errorf("Error connecting to postgres: %s", conn)
+	}
+
+	taskname := "zzzzzzzz"
+	_, err = store.GetTaskByName(taskname)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	task := timetracker.Task{
+		Name: taskname,
+	}
+
+	var id int
+	id, err = store.Create(task)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	task.Id = id
+
+	err = store.NewTaskSession(task)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := store.GetTaskBySession()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := task
+
+	if !cmp.Equal(want, got) {
+		t.Error(cmp.Diff(want, got))
+	}
+
+	err = store.Delete(task)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+}
+
 func TestGenerateInsertSQL(t *testing.T) {
 	t.Parallel()
 	want := `INSERT INTO tasks(task_name, start_time) VALUES($1, $2) RETURNING id`
@@ -81,7 +137,7 @@ func TestParseRowsTasks(t *testing.T) {
 
 	mock.ExpectQuery("SELECT task_name, start_time, elapsed_time FROM tasks ORDER BY start_time DESC LIMIT 10").WillReturnRows(rows)
 
-	e := &timetracker.Env{Db: db}
+	e := &timetracker.PostgresStore{Db: db}
 
 	query, err := timetracker.GenerateSQLQuery("latest")
 	if err != nil {
@@ -132,7 +188,7 @@ func TestParseRowsReport(t *testing.T) {
 
 	mock.ExpectQuery("SELECT task_name, SUM(elapsed_time) total_time FROM tasks GROUP BY task_name ORDER BY SUM(elapsed_time) DESC").WillReturnRows(rows)
 
-	e := &timetracker.Env{Db: db}
+	e := &timetracker.PostgresStore{Db: db}
 
 	query, err := timetracker.GenerateSQLQuery("report")
 	if err != nil {

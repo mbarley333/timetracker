@@ -32,11 +32,11 @@ func (t Task) GetActive() bool {
 
 func (t *Task) StartAt(now time.Time) {
 	t.Active = true
-	t.StartTime = now
+	t.StartTime = now.UTC()
 }
 
 func (t *Task) Stop(now time.Time) {
-	stop := now
+	stop := now.UTC()
 	t.ElapsedTime = stop.Sub(t.StartTime)
 	t.ElapsedTimeSec = t.ElapsedTime.Seconds()
 	t.Active = false
