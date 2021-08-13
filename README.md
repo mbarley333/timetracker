@@ -8,6 +8,7 @@ A Go learning project for tracking time spent on tasks.  Use docker-compose to s
 ```bash
 docker-compose up
 ```
+Browse to: http://127.0.0.1/home
 
 
 ## Goals
