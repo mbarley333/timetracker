@@ -16,22 +16,19 @@ const (
 	UPSERT_TASK_SESSION string = `INSERT INTO task_session (username,taskid) VALUES ($1,$2) ON CONFLICT (username) DO UPDATE SET taskid=$2`
 )
 
-type PostgresStore struct {
+type DataStore struct {
 	Db *sql.DB
 }
 
-func NewPostgresStore(conn string) (*PostgresStore, error) {
-
+func NewDataStore(conn string) (*DataStore, error) {
 	db, err := sql.Open("postgres", conn)
 	if err != nil {
 		return nil, err
 	}
-
-	return &PostgresStore{Db: db}, nil
+	return &DataStore{Db: db}, nil
 }
 
-// DB related
-func (p *PostgresStore) Create(task Task) (int, error) {
+func (d *DataStore) Create(task Task) (int, error) {
 
 	stmt, err := p.Db.Prepare(INSERT)
 	if err != nil {
@@ -48,7 +45,7 @@ func (p *PostgresStore) Create(task Task) (int, error) {
 	return taskid, nil
 }
 
-func (p *PostgresStore) NewTaskSession(task Task) error {
+func (d *DataStore) NewTaskSession(task Task) error {
 	username := "app"
 
 	_, err := p.Db.Exec(UPSERT_TASK_SESSION, username, task.Id)
@@ -59,9 +56,9 @@ func (p *PostgresStore) NewTaskSession(task Task) error {
 
 }
 
-func (p *PostgresStore) UpdateStopped(task Task) error {
+func (d *DataStore) UpdateStopped(task Task) error {
 
-	_, err := p.Db.Exec(UPDATE_STOPPED, task.ElapsedTimeSec)
+	_, err := d.Db.Exec(UPDATE_STOPPED, task.ElapsedTimeSec)
 	if err != nil {
 		return fmt.Errorf("unable to update elapsed time: %s", err)
 	}
@@ -69,9 +66,9 @@ func (p *PostgresStore) UpdateStopped(task Task) error {
 
 }
 
-func (p *PostgresStore) Delete(task Task) error {
+func (d *DataStore) Delete(task Task) error {
 
-	_, err := p.Db.Exec(DELETE, task.Id)
+	_, err := d.Db.Exec(DELETE, task.Id)
 	if err != nil {
 		return fmt.Errorf("unable to delete record: %s", err)
 	}
@@ -80,9 +77,9 @@ func (p *PostgresStore) Delete(task Task) error {
 }
 
 // stop here
-func (p *PostgresStore) GetTaskByName(taskname string) (Task, error) {
+func (d *DataStore) GetTaskByName(taskname string) (Task, error) {
 
-	rows, err := p.Db.Query(BY_NAME, taskname)
+	rows, err := d.Db.Query(BY_NAME, taskname)
 	if err != nil {
 		return Task{}, fmt.Errorf("failed to get report: %s", err)
 	}
@@ -96,9 +93,9 @@ func (p *PostgresStore) GetTaskByName(taskname string) (Task, error) {
 	return task, nil
 }
 
-func (p *PostgresStore) GetTaskBySession() (Task, error) {
+func (d *DataStore) GetTaskBySession() (Task, error) {
 
-	rows, err := p.Db.Query(BY_SESSION)
+	rows, err := d.Db.Query(BY_SESSION)
 	if err != nil {
 		return Task{}, fmt.Errorf("failed to get report: %s", err)
 	}
@@ -112,9 +109,9 @@ func (p *PostgresStore) GetTaskBySession() (Task, error) {
 	return task, nil
 }
 
-func (p *PostgresStore) GetReport() ([]Report, error) {
+func (d *DataStore) GetReport() ([]Report, error) {
 
-	rows, err := p.Db.Query(REPORT)
+	rows, err := d.Db.Query(REPORT)
 	if err != nil {
 		return []Report{}, fmt.Errorf("failed to get report: %s", err)
 	}
@@ -129,9 +126,9 @@ func (p *PostgresStore) GetReport() ([]Report, error) {
 
 }
 
-func (p *PostgresStore) GetLatest() ([]Task, error) {
+func (d *DataStore) GetLatest() ([]Task, error) {
 
-	rows, err := p.Db.Query(LATEST)
+	rows, err := d.Db.Query(LATEST)
 	if err != nil {
 		return []Task{}, fmt.Errorf("failed to get latest: %s", err)
 	}

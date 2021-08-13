@@ -58,10 +58,10 @@ func WithNoLogging() Option {
 	}
 }
 
-func WithPostgresStore(conn string) Option {
+func WithDataStore(conn string) Option {
 	return func(s *Server) error {
 
-		store, err := NewPostgresStore(conn)
+		store, err := NewDataStore(conn)
 		if err != nil {
 			return err
 		}

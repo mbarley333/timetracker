@@ -9,7 +9,7 @@ func main() {
 
 	conn := "host=postgres port=5432 user=postgres dbname=timetracker sslmode=disable"
 	s := timetracker.NewServer(
-		timetracker.WithPostgresStore(conn),
+		timetracker.WithDataStore(conn),
 	)
 	log.Fatal(s.ListenAndServe())
 
