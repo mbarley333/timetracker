@@ -1,5 +1,5 @@
 # timetracker
-The timetracker application allows you to track time spent on tasks.  The project allows you to use either a SQLite or Postgres as the data store.
+The timetracker application allows you to track time spent on tasks.  The timetracker frontend and backend is built with Go and the data store is either SQLite or Postgres.  
 
 ## prerequisites
 * Go 1.16
