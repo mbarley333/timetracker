@@ -50,7 +50,7 @@ func main() {
 ```bash
 cd store/pg
 docker-compose up
-go run cmd/main.go
+go run ../../cmd/main.go
 browse to: http://127.0.0.1/home
 ```
 
