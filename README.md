@@ -6,22 +6,22 @@ The timetracker application allows you to track time spent on tasks.  The projec
 * Docker
 * docker-compose 
 
-# Startup options
-1) containerized timetracker application
+## startup options
+# 1) containerized timetracker application
 	```bash
 	docker-compose up
 	```
 	Browse to: http://127.0.0.1/home
 	
 
-2) timetracker with SQLite
+# 2) timetracker with SQLite
 	```bash
 	go run cmd/main.go
 	```
 	Browse to: http://127.0.0.1/home
 	
 
-3) timetracker with Postgres container
+# 3) timetracker with Postgres container
 	edit cmd/main.go:
 
 	```bash
