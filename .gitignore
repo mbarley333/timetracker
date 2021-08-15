@@ -21,3 +21,4 @@
 postgres-data/
 *.db
 store/pg/postgres-data/
+store/pg/store-pg-data/
