@@ -63,6 +63,7 @@ To learn and become more familiar with the following aspects of the Go language:
 * HTTP Server
 * templates
 * interfaces
+* embed
 * Postgres
 * SQLite
 
