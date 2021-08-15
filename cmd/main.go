@@ -7,7 +7,7 @@ import (
 
 func main() {
 
-	conn := "host=postgres port=5432 user=postgres dbname=timetracker sslmode=disable"
+	conn := "host=localhost port=5432 user=postgres dbname=timetracker sslmode=disable"
 	s := timetracker.NewServer(
 		timetracker.WithPostgresStore(conn),
 	)

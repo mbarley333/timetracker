@@ -16,6 +16,7 @@ import (
 	"timetracker/ui"
 
 	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type TaskStore interface {
@@ -62,6 +63,19 @@ func WithPostgresStore(conn string) Option {
 	return func(s *Server) error {
 
 		db, err := NewPostgresStore(conn)
+		if err != nil {
+			return err
+		}
+
+		s.TaskStore = db
+		return nil
+	}
+}
+
+func WithSqliteStore() Option {
+	return func(s *Server) error {
+
+		db, err := NewSqliteStore()
 		if err != nil {
 			return err
 		}

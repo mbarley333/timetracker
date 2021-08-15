@@ -96,7 +96,7 @@ func (s *Server) startedTask(w http.ResponseWriter, r *http.Request) {
 
 	id, err := s.TaskStore.Create(task)
 	if err != nil {
-		fmt.Fprint(w, http.StatusInternalServerError)
+		fmt.Fprint(w, "error creating task:", http.StatusInternalServerError)
 		return
 	}
 
@@ -104,7 +104,7 @@ func (s *Server) startedTask(w http.ResponseWriter, r *http.Request) {
 
 	err = s.TaskStore.NewTaskSession(task)
 	if err != nil {
-		fmt.Fprint(w, http.StatusInternalServerError)
+		fmt.Fprint(w, "error creating task_session:", http.StatusInternalServerError)
 		return
 	}
 
@@ -134,7 +134,7 @@ func (s *Server) stopTask(w http.ResponseWriter, r *http.Request) {
 
 	task, err := s.TaskStore.GetTaskBySession()
 	if err != nil {
-		fmt.Fprint(w, http.StatusInternalServerError)
+		fmt.Fprint(w, "error GetTaskBySession", http.StatusInternalServerError)
 		return
 	}
 
@@ -142,7 +142,7 @@ func (s *Server) stopTask(w http.ResponseWriter, r *http.Request) {
 
 	err = s.TaskStore.UpdateStopped(task)
 	if err != nil {
-		fmt.Fprint(w, http.StatusInternalServerError)
+		fmt.Fprint(w, "error stopped", http.StatusInternalServerError)
 		return
 	}
 
