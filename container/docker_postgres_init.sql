@@ -7,5 +7,6 @@ CREATE TABLE IF NOT EXISTS tasks (
 
 
 CREATE TABLE IF NOT EXISTS task_session(
-    taskid INTEGER
+    userName varchar(100) PRIMARY KEY,
+    taskid int
 );

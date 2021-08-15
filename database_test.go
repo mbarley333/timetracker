@@ -11,8 +11,6 @@ import (
 
 func TestPostgres(t *testing.T) {
 
-	// setup the machinery to run a test...in this case, we are using so why not spin it up
-	// test the behavior to make sure the interface is working as expected
 	t.Parallel()
 	conn := "host=localhost port=5432 user=postgres dbname=timetracker sslmode=disable"
 
@@ -94,7 +92,7 @@ func TestParseRowsTasks(t *testing.T) {
 
 	mock.ExpectQuery("SELECT task_name, start_time, elapsed_time FROM tasks ORDER BY start_time DESC LIMIT 10").WillReturnRows(rows)
 
-	e := &timetracker.PostgresStore{Db: db}
+	e := &timetracker.DBStore{Db: db}
 
 	results, err := e.Db.Query(timetracker.LATEST)
 	if err != nil {
@@ -140,7 +138,7 @@ func TestParseRowsReport(t *testing.T) {
 
 	mock.ExpectQuery("SELECT task_name, SUM(elapsed_time) total_time FROM tasks GROUP BY task_name ORDER BY SUM(elapsed_time) DESC").WillReturnRows(rows)
 
-	e := &timetracker.PostgresStore{Db: db}
+	e := &timetracker.DBStore{Db: db}
 
 	results, err := e.Db.Query(timetracker.REPORT)
 	if err != nil {

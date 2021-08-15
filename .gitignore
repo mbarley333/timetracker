@@ -17,5 +17,7 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-# pg data
+# db data
 postgres-data/
+*.db
+store/pg/store-pg-data/

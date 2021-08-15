@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres
+    container_name: postgres
+    environment: 
+      - POSTGRES_USER=postgres  
+      - POSTGRES_DB=timetracker
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - DATABASE_HOST=127.0.0.1 
+
+    networks:
+      - mynet
+    ports:
+      - 5432:5432
+    volumes:
+      - ./docker_postgres_init.sql:/docker-entrypoint-initdb.d/docker_postgres_init.sql
+      - ./store-pg-data:/var/lib/postgresql/data
+
+
+volumes:
+   postgres-data:
+
+networks:
+  mynet:
+    driver: bridge
