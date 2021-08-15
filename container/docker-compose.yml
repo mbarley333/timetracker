@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  app:
+    depends_on: 
+      - db
+    build:
+      context: .
+    container_name: timetracker
+    hostname: timetracker
+    networks:
+      - mynet
+    ports:
+      - 4000:4000
+    environment:
+      - TIMETRACKER_DB_HOST=postgres
+      - TIMETRACKER_DB_PORT=5432
+      - TIMETRACKER_DB_NAME=timetracker
+      - TIMETRACKER_DB_USER=postgres
+    deploy:
+      restart_policy:
+        condition: on-failure
+  db:
+    image: postgres
+    container_name: postgres
+    environment: 
+      - POSTGRES_USER=postgres  
+      - POSTGRES_DB=timetracker
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - DATABASE_HOST=127.0.0.1 
+
+    networks:
+      - mynet
+    ports:
+      - 5432:5432
+    volumes:
+      - ./docker_postgres_init.sql:/docker-entrypoint-initdb.d/docker_postgres_init.sql
+      - ./postgres-data:/var/lib/postgresql/data
+
+
+volumes:
+   postgres-data:
+
+networks:
+  mynet:
+    driver: bridge

@@ -1,7 +1,7 @@
 FROM golang:1.16-alpine AS build
 
 ADD . /go/src/timetracker
-WORKDIR /go/src/timetracker/cmd
+WORKDIR /go/src/timetracker/container/cmd
 RUN CGO_ENABLED=0 go test
 RUN CGO_ENABLED=0 go build -o /bin/timetracker
 

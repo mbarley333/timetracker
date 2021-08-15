@@ -16,7 +16,7 @@ services:
       - 5432:5432
     volumes:
       - ./docker_postgres_init.sql:/docker-entrypoint-initdb.d/docker_postgres_init.sql
-      - ./postgres-data:/var/lib/postgresql/data
+      - ./store-pg-data:/var/lib/postgresql/data
 
 
 volumes:

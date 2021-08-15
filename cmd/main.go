@@ -7,9 +7,8 @@ import (
 
 func main() {
 
-	conn := "host=localhost port=5432 user=postgres dbname=timetracker sslmode=disable"
 	s := timetracker.NewServer(
-		timetracker.WithPostgresStore(conn),
+		timetracker.WithSqliteStore(),
 	)
 	log.Fatal(s.ListenAndServe())
 
