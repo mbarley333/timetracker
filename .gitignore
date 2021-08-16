@@ -19,6 +19,7 @@
 
 # vscode
 *.vscode
+*.env
 
 # db data
 postgres-data/
