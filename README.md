@@ -11,14 +11,14 @@ The timetracker application allows you to track time spent on tasks.  The timetr
 
 
 **1) containerized timetracker application and Postgres container**
-clone repo locally
+<br>clone repo locally
 ```bash
 docker-compose up
 browse to: http://127.0.0.1:4000/home
 ```
 
 **2) timetracker with SQLite**
-clone repo locally
+<br>clone repo locally
 ```bash
 cd to directory
 go run ./cmd/main.go
