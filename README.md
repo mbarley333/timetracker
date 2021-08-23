@@ -9,7 +9,7 @@ The timetracker application allows you to track time spent on tasks.  The timetr
 ## startup options
 
 **1) timetracker with SQLite**
-download applicable <a href="https://github.com/mbarley333/timetracker/releases/tag/v0.1.0">release</a><br>
+<br>download applicable <a href="https://github.com/mbarley333/timetracker/releases/tag/v0.1.0">release</a><br>
 cd to download folder<br>
 extract from .gz
 ```bash
