@@ -8,17 +8,20 @@ The timetracker application allows you to track time spent on tasks.  The timetr
 
 ## startup options
 
-**1) containerized timetracker application and Postgres container**
+**1) timetracker with SQLite**
+download applicable <a href="https://github.com/mbarley333/timetracker/releases/tag/v0.1.0">release</a>
+cd to download folder
+extract from .gz
 ```bash
-docker-compose up
+./timetracker
 browse to: http://127.0.0.1/home
 ```
-
 -----
 
-**2) timetracker with SQLite**
+**2) containerized timetracker application and Postgres container**
+clone repo locally
 ```bash
-go run cmd/main.go
+docker-compose up
 browse to: http://127.0.0.1/home
 ```
 
