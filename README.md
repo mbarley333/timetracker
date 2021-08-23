@@ -1,29 +1,30 @@
 # timetracker
 The timetracker application allows you to track time spent on tasks.  The timetracker frontend and backend is built with Go and the data store is either SQLite or Postgres.  
 
-## optional prerequisites for startup modes #2, #3
+## prerequisites
 * Go 1.16
 * Docker
 * docker-compose 
 
 ## startup options
 
-**1) timetracker with SQLite**
-<br>download applicable <a href="https://github.com/mbarley333/timetracker/releases/tag/v0.1.0">release</a><br>
-cd to download folder<br>
-extract from .gz
-```bash
-./timetracker
-browse to: http://127.0.0.1:4000/home
-```
------
 
-**2) containerized timetracker application and Postgres container**
+
+**1) containerized timetracker application and Postgres container**
 clone repo locally
 ```bash
 docker-compose up
 browse to: http://127.0.0.1:4000/home
 ```
+
+**2) timetracker with SQLite**
+clone repo locally
+```bash
+cd to directory
+go run ./cmd/main.go
+browse to: http://127.0.0.1:4000/home
+```
+-----
 
 -----
 
