@@ -1,7 +1,7 @@
 # timetracker
 The timetracker application allows you to track time spent on tasks.  The timetracker frontend and backend is built with Go and the data store is either SQLite or Postgres.  
 
-## prerequisites
+## optional prerequisites for startup modes #2, #3
 * Go 1.16
 * Docker
 * docker-compose 
