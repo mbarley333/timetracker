@@ -9,12 +9,12 @@ The timetracker application allows you to track time spent on tasks.  The timetr
 ## startup options
 
 **1) timetracker with SQLite**
-download applicable <a href="https://github.com/mbarley333/timetracker/releases/tag/v0.1.0">release</a>
-cd to download folder
+download applicable <a href="https://github.com/mbarley333/timetracker/releases/tag/v0.1.0">release</a><br>
+cd to download folder<br>
 extract from .gz
 ```bash
 ./timetracker
-browse to: http://127.0.0.1/home
+browse to: http://127.0.0.1:4000/home
 ```
 -----
 
@@ -22,7 +22,7 @@ browse to: http://127.0.0.1/home
 clone repo locally
 ```bash
 docker-compose up
-browse to: http://127.0.0.1/home
+browse to: http://127.0.0.1:4000/home
 ```
 
 -----
@@ -54,7 +54,7 @@ func main() {
 cd store/pg
 docker-compose up
 go run ../../cmd/main.go
-browse to: http://127.0.0.1/home
+browse to: http://127.0.0.1:4000/home
 ```
 
 
