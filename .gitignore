@@ -25,3 +25,4 @@
 postgres-data/
 *.db
 store/pg/store-pg-data/
+dist/
